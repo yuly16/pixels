@@ -67,5 +67,6 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/liburing/src)
 message(${CMAKE_CURRENT_BINARY_DIR}/liburing/src)
 target_link_libraries(pixels-common
         ${Protobuf_LIBRARIES}
-		${CMAKE_CURRENT_BINARY_DIR}/liburing/src/liburing.a
+	absl_log_internal_check_op	
+	${CMAKE_CURRENT_BINARY_DIR}/liburing/src/liburing.a
         )
