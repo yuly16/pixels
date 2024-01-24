@@ -6,6 +6,8 @@
 #include "physical/io/PhysicalLocalReader.h"
 #include "profiler/CountProfiler.h"
 
+
+
 PixelsRecordReaderImpl::PixelsRecordReaderImpl(std::shared_ptr<PhysicalReader> reader,
                                                const pixels::proto::PostScript& pixelsPostScript,
                                                const pixels::proto::Footer& pixelsFooter,
@@ -365,6 +367,7 @@ bool PixelsRecordReaderImpl::read() {
             throw InvalidArgumentException("Pixels C++ reader only supports little endianness. ");
         }
 		ChunkId chunk(curRGIdx, colId, chunkIndex.chunkoffset(), chunkIndex.chunklength());
+        ::TimeProfiler::Instance().push(fileSchema->getFieldNames()[colId], (int)chunkIndex.chunklength());
 		diskChunks.emplace_back(chunk);
 	}
 
@@ -378,6 +381,7 @@ bool PixelsRecordReaderImpl::read() {
             ChunkId chunk = diskChunks.at(i);
             requestBatch.add(queryId, chunk.offset, (int)chunk.length, ::BufferPool::GetBufferId(i));
 			colIds.emplace_back(chunk.columnId);
+
 			bytes.emplace_back(chunk.length);
         }
 		::BufferPool::Initialize(colIds, bytes);

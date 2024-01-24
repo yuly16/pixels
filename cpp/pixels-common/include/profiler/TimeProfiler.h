@@ -10,6 +10,7 @@
 #include <string>
 #include "exception/InvalidArgumentException.h"
 #include "profiler/AbstractProfiler.h"
+#include <unordered_map>
 #include <chrono>
 #include <map>
 #include <mutex>
@@ -24,14 +25,17 @@ public:
     long Get(const std::string &label);
     void Reset() override;
     void Print() override;
+    void push(std::string key, int value);
     void Collect();
     int GetResultSize();
+    std::unordered_map<std::string, int> colSizes;
+    std::mutex m;
 private:
     TimeProfiler();
     static thread_local std::map<std::string,std::chrono::steady_clock::time_point> profiling;
     static thread_local std::map<std::string, long> localResult;
     std::mutex lock;
-    std::map<std::string, long> globalResult;
+    std::unordered_map<std::string, long> globalResult;
 };
 
 #endif //DUCKDB_TIMEPROFILER_H

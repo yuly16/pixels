@@ -58,6 +58,10 @@ void TimeProfiler::Print() {
             std::cout<<iter.first<<" "<<1.0 * iter.second / 1000000000 <<"s(thread time)"<<std::endl;
         }
     }
+    std::cout<<"print"<<std::endl;
+    for(auto& x: colSizes) {
+        std::cout<<x.first<<" "<<x.second<<std::endl;
+    }
 }
 
 void TimeProfiler::Reset() {
@@ -92,5 +96,15 @@ void TimeProfiler::Collect() {
         }
     }
     localResult.clear();
+}
+
+void TimeProfiler::push(std::string key, int value) {
+    m.lock();
+    if (!colSizes.count(key)) {
+        colSizes[key] = value;
+    } else {
+        colSizes[key] = std::max(colSizes[key], value);
+    }
+    m.unlock();
 }
 
