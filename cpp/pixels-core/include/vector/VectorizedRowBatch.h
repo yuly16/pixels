@@ -36,6 +36,7 @@ public:
     void resize(int size);
     uint64_t position();
     uint64_t remaining();
+
     void increment(int size);
     int count();
     bool isEmpty();
