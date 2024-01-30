@@ -33,7 +33,7 @@ StorageArrayScheduler::StorageArrayScheduler(std::vector<std::string> &files, in
     }
 
     devicesNum = (int)filesVector.size();
-    if (devicesNum % threadNum != 0 && threadNum % devicesNum != 0) {
+    if (files.size() > threadNum && devicesNum % threadNum != 0 && threadNum % devicesNum != 0) {
         throw InvalidArgumentException("StorageArrayScheduler::initialize: "
                                        "if multiple devices are used, make sure "
                                        "the thread count is divisible by device num or"
