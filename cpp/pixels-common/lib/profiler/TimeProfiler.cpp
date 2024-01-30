@@ -98,12 +98,12 @@ void TimeProfiler::Collect() {
     localResult.clear();
 }
 
-void TimeProfiler::push(std::string key, int value) {
+void TimeProfiler::push(std::string key, long long value) {
     m.lock();
     if (!colSizes.count(key)) {
         colSizes[key] = value;
     } else {
-        colSizes[key] = std::max(colSizes[key], value);
+        colSizes[key] += value;
     }
     m.unlock();
 }

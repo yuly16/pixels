@@ -25,10 +25,10 @@ public:
     long Get(const std::string &label);
     void Reset() override;
     void Print() override;
-    void push(std::string key, int value);
+    void push(std::string key, long long value);
     void Collect();
     int GetResultSize();
-    std::unordered_map<std::string, int> colSizes;
+    std::unordered_map<std::string, long long> colSizes;
     std::mutex m;
 private:
     TimeProfiler();
