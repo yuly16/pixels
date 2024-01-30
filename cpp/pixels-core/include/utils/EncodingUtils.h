@@ -48,6 +48,7 @@ public:
 	                      const std::shared_ptr<ByteBuffer> &input);
 	void unrolledUnPack64(long *buffer, int offset, int len,
 	                      const std::shared_ptr<ByteBuffer> &input);
+    int getClosestFixedBits(int n);
 private:
 enum FixedBitSizes{
         ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE,

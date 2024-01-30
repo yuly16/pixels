@@ -402,6 +402,50 @@ long EncodingUtils::readLongBE8(int rbOffset) {
             + ((readBuffer[rbOffset + 7] & 255) << 0));
 }
 
+int EncodingUtils::getClosestFixedBits(int n) {
+    if (n == 0)
+    {
+        return 1;
+    }
+
+    if (n >= 1 && n <= 24)
+    {
+        return n;
+    }
+    else if (n > 24 && n <= 26)
+    {
+        return 26;
+    }
+    else if (n > 26 && n <= 28)
+    {
+        return 28;
+    }
+    else if (n > 28 && n <= 30)
+    {
+        return 30;
+    }
+    else if (n > 30 && n <= 32)
+    {
+        return 32;
+    }
+    else if (n > 32 && n <= 40)
+    {
+        return 40;
+    }
+    else if (n > 40 && n <= 48)
+    {
+        return 48;
+    }
+    else if (n > 48 && n <= 56)
+    {
+        return 56;
+    }
+    else
+    {
+        return 64;
+    }
+}
+
 EncodingUtils::~EncodingUtils() {
 	if(readBuffer != nullptr) {
         delete [] readBuffer;

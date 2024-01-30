@@ -55,8 +55,8 @@ void RunLenIntDecoder::readValues() {
             readDirectValues(firstByte);
             break;
         case RunLenIntEncoder::PATCHED_BASE:
-            throw InvalidArgumentException("Currently "
-                                           "we don't support PATCHED_BASE encoding.");
+            readPatchedBaseValues(firstByte);
+            break;
         case RunLenIntEncoder::DELTA:
 		    readDeltaValues(firstByte);
 		    break;
@@ -297,4 +297,120 @@ long RunLenIntDecoder::bytesToLongBE(const std::shared_ptr<ByteBuffer> &input, i
 }
 bool RunLenIntDecoder::hasNext() {
 	return used != numLiterals || (inputStream->size() - inputStream->getReadPos()) > 0;
+}
+
+void RunLenIntDecoder::readPatchedBaseValues(int firstByte) {
+    // extract the number of fixed bits
+    int fbo = (((uint32_t)firstByte) >> 1) & 0x1f;
+    int fb = encodingUtils.decodeBitWidth(fbo);
+
+    // extract the run length of data blob
+    int len = (firstByte & 0x01) << 8;
+    len |= inputStream->get();
+    // runs are always one off
+    len += 1;
+
+    // extract the number of bytes occupied by base
+    int thirdByte = inputStream->get();
+    int bw = (((uint32_t)thirdByte) >> 5) & 0x07;
+    // base width is one off
+    bw += 1;
+
+    // extract patch width
+    int pwo = thirdByte & 0x1f;
+    int pw = encodingUtils.decodeBitWidth(pwo);
+
+    // read fourth byte and extract patch gap width
+    int fourthByte = inputStream->get();
+    int pgw = (((uint32_t)fourthByte) >> 5) & 0x07;
+    // patch gao width is one off
+    pgw += 1;
+
+    // extract the length of the patch list
+    int pl = fourthByte & 0x1f;
+
+    // read the next base width number of bytes to extract base value
+    long base = bytesToLongBE(inputStream, bw);
+    long mask = (1L << ((bw * 8) - 1));
+    // if MSB of base value is 1 then base is negative value else positive
+    if ((base & mask) != 0) {
+        base = base & ~mask;
+        base = -base;
+    }
+
+    // unpack the data blob
+    long * unpacked = new long[len];
+    readInts(unpacked, 0, len, fb, inputStream);
+
+    // unpack the patch blob
+    long * unpackedPatch = new long[pl];
+
+    if ((pw + pgw) > 64) {
+        throw InvalidArgumentException("pw add pgw is bigger than 64");
+        return;
+    }
+    int bitSize = encodingUtils.getClosestFixedBits(pw + pgw);
+    readInts(unpackedPatch, 0, pl, bitSize, inputStream);
+
+    // apply the patch directly when adding the packed data
+    int patchIdx = 0;
+    long currGap = 0;
+    long currPatch = 0;
+    long patchMask = ((1L << pw) - 1);
+
+    currGap = (((uint64_t)unpackedPatch[patchIdx]) >> pw);
+    currPatch = unpackedPatch[patchIdx] & patchMask;
+    long actualGap = 0;
+
+    // special case: gap is greater than 255 then patch value will be 0
+    // if gap is smaller or equal than 255 then patch value cannot be 0
+    while (currGap == 255 && currPatch == 0)
+    {
+        actualGap += 255;
+        patchIdx++;
+        currGap = (((uint64_t)unpackedPatch[patchIdx]) >> pw);
+        currPatch = unpackedPatch[patchIdx] & patchMask;
+    }
+    // and the left over gap
+    actualGap += currGap;
+
+    // unpack data blob, patch it (if required), add base to get final result
+    for (int i = 0; i < len; i++)
+    {
+        if (i == actualGap) {
+            // extract the patch value
+            long patchedVal = unpacked[i] | (currPatch << fb);
+            // add base to patched value
+            literals[numLiterals++] = base + patchedVal;
+            // increment the patch to point to next entry in patch list
+            patchIdx++;
+            if (patchIdx < pl) {
+                // read the next gap and patch
+                currGap = (((uint64_t)unpackedPatch[patchIdx]) >> pw);
+                currPatch = unpackedPatch[patchIdx] & patchMask;
+                actualGap = 0;
+
+                // special case: gap is grater than 255 then patch will be 0
+                // if gap is smaller or equal than 255 then patch cannot be 0
+                while (currGap == 255 && currPatch == 0)
+                {
+                    actualGap += 255;
+                    patchIdx++;
+                    currGap = (((uint64_t)unpackedPatch[patchIdx]) >> pw);
+                    currPatch = unpackedPatch[patchIdx] & patchMask;
+                }
+                // add the left over gap
+                actualGap += currGap;
+
+                // next gap is relative to the current gap
+                actualGap += i;
+            }
+        }
+        else {
+            // no patching required. add base to unpacked value to get final value
+            literals[numLiterals++] = base + unpacked[i];
+        }
+    }
+    delete[] unpackedPatch;
+    delete[] unpacked;
 }

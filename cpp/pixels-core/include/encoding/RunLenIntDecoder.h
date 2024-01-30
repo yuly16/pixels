@@ -25,6 +25,7 @@ private:
 	void readShortRepeatValues(int firstByte);
     void readDirectValues(int firstByte);
 	void readDeltaValues(int firstByte);
+    void readPatchedBaseValues(int firstByte);
 	long readVulong(const std::shared_ptr<ByteBuffer>& input);
 	long readVslong(const std::shared_ptr<ByteBuffer>& input);
 	long bytesToLongBE(const std::shared_ptr<ByteBuffer>& input, int n);
